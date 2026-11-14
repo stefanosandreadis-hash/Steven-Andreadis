@@ -1,0 +1,236 @@
+:root {
+  --bg: #000;
+  --fg: #fff;                /* all type is white; the blend below makes it invert against the image */
+  --fg-info: var(--fg);
+  --dim: .5;                 /* other text drops to 50% while Info is open (as in Figma) */
+  --pad: 15px;               /* margin around ALL the type: left, right, top and bottom */
+  --bottom: var(--pad);      /* distance of Read more and the counter from the bottom edge */
+  --open-scale: .935;        /* the image shrinks to this size while Information / Read more is open (1 = no shrink) */
+  --font: "EB Garamond", Garamond, Georgia, serif;
+  --slide-ease: cubic-bezier(.65, 0, .35, 1);
+  --slide-time: .8s;
+  --info-w: 1190px;          /* width of the Information / Read more text (left aligned) */
+  --title-w: 50vw;           /* max width of the project title block (half of the browser) */
+  --img-w: 40vw;             /* default width of every image/video */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  background: var(--bg);
+  scroll-snap-type: y mandatory;   /* one project per scroll step */
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar { display: none; }
+
+body {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.3;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+a { color: inherit; text-decoration: underline; }
+.sc { font-variant-caps: small-caps; }
+
+/* ---------- 01 Lock screen ---------- */
+.lock { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; }
+.lock-title { font-size: 20px; margin-bottom: 12px; }
+.lock-foot { position: fixed; bottom: var(--pad); left: 0; right: 0; text-align: center; }
+
+#pw {
+  display: block;
+  width: 260px;
+  margin: 0 auto;
+  background: none;
+  border: 0;
+  outline: 0;
+  color: var(--fg);
+  caret-color: var(--fg);          /* the blinking cursor */
+  text-align: center;
+  font: inherit;
+  font-variant-caps: small-caps;
+  letter-spacing: .08em;
+}
+#pw::placeholder { color: var(--fg); opacity: 1; letter-spacing: 0; }
+#pw:focus::placeholder { color: transparent; }   /* click -> only the cursor remains */
+
+
+
+/* ---------- Fixed top texts ---------- */
+.clock { position: fixed; top: var(--pad); right: var(--pad); z-index: 10; transition: opacity .6s; }
+
+/* the clock never blocks clicks */
+.clock { pointer-events: none; }
+
+/* Read more (project) or Information (bio) open -> page scroll is locked (position is kept) */
+html:has(.info:checked), html:has(#bio:checked) { overflow: hidden; }
+
+/* Info open anywhere -> dim the top text */
+body:has(.info:checked) .bio-toggle,
+body:has(.info:checked) .site > .clock,
+body:has(#bio:checked) .site > .clock { opacity: var(--dim); }
+
+/* ---------- One project = one full-screen snap step ---------- */
+.proj { height: 100vh; scroll-snap-align: start; position: relative; }
+.proj > input { display: none; }
+
+/* Fallback (browsers without scroll-driven animations): plain stacked screens */
+.fix { position: relative; height: 100vh; overflow: hidden; }
+
+/* ---------- Stage: images/videos sliding horizontally ---------- */
+.stage { position: absolute; inset: 0; overflow: hidden; }
+.track {
+  display: flex;
+  width: max-content;                      /* grows with the number of slides, nothing to set */
+  height: 100%;
+  transform: translateX(calc(var(--i, 0) * -100vw));
+  transition: transform var(--slide-time) var(--slide-ease), filter .6s;
+}
+.slide { flex: 0 0 100vw; width: 100vw; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* Images/videos: scaled proportionally, never cropped.
+   Width = --w on the element if set, otherwise --img-w. Height follows the ratio,
+   and is capped at max-height (object-fit: contain keeps the whole image visible). */
+.slide img, .slide video {
+  display: block;
+  width: var(--w, var(--img-w));
+  height: auto;
+  max-width: 85vw;
+  max-height: 52vh;
+  object-fit: contain;
+}
+
+/* Full-page tags:  class="slide full"  |  class="slide full fit"
+   full      = fills 100% width and 100% height of the screen (crops the overflow, never distorts)
+   full fit  = full page, but the whole image stays visible (black bars if the ratio differs) */
+.slide.full img, .slide.full video { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; }
+.slide.full.fit img, .slide.full.fit video { object-fit: contain; }
+
+/* ---------- Navigation: the whole screen is the button, the cursor is the arrow ----------
+   left half = back (arrow left)     right half = next (arrow right)     (the last image goes on to the next project)
+   The title block, Read more and the Information button sit above the zones and keep the normal cursor.
+   Replace css/cursors/arrow-left.svg and arrow-right.svg with your own arrows (Figma: select the arrow, Export, SVG, 32x32).
+   script.js adds the zones and the counter to every project, so a new project needs no extra markup. */
+.zone { position: absolute; z-index: 2; top: 0; bottom: 0; }
+.zone-back { left: 0;   right: 50%; cursor: url(cursors/arrow-left.svg) 16 16, w-resize; }
+.zone-next { left: 50%; right: 0;   cursor: url(cursors/arrow-right.svg) 16 16, e-resize; }
+.zone.off { pointer-events: none; cursor: default; }        /* nothing to do here (first image) */
+body:has(.info:checked) .zone,
+body:has(#bio:checked) .zone { pointer-events: none; }      /* while text is open a click only closes it */
+
+/* Image counter, bottom right: 01/17 */
+.counter { position: absolute; right: var(--pad); bottom: var(--bottom); z-index: 3; pointer-events: none; font-variant-numeric: lining-nums; transition: color .6s; }
+body:has(.info:checked) .counter,
+body:has(#bio:checked) .counter { color: rgb(255 255 255 / var(--dim)); }
+
+/* ---------- Caption + Info (left aligned, as in the Figma) ---------- */
+.caption {
+  position: absolute;
+  left: var(--pad);
+  width: min(var(--info-w), calc(100% - 2 * var(--pad)));   /* shrinks on small screens */
+  bottom: calc(var(--bottom) + 1.3em + 8px);                /* sits just above Read more */
+  z-index: 3;
+  pointer-events: none;                                      /* the text never blocks the arrow zones under it */
+}
+.title { text-align: left; width: fit-content; max-width: var(--title-w); cursor: pointer; transition: opacity .6s; }   /* the whole title opens / closes Read more */
+body:has(#bio:checked) .title,
+body:has(#bio:checked) .toggle span { opacity: var(--dim); }
+.toggle {                                   /* Read more / Close, bottom left */
+  position: absolute;
+  left: var(--pad);
+  width: max-content;
+  bottom: var(--bottom);
+  z-index: 6;
+  cursor: pointer;
+}
+
+/* The caption box itself never blocks a click: only the title and the open text do (a click anywhere else closes Read more, see script.js) */
+.caption { pointer-events: none; }
+.title, .desc > p { pointer-events: auto; }
+.desc > p { width: fit-content; max-width: 100%; }
+.desc {
+  display: grid;
+  grid-template-rows: 0fr;                  /* closed */
+  opacity: 0;
+  transition: grid-template-rows .7s var(--slide-ease), opacity .7s;
+}
+.desc > p { white-space: pre-line; text-align: left; overflow: hidden; min-height: 0; padding: 0; transform: translateY(20px); transition: transform .7s var(--slide-ease), padding .7s var(--slide-ease); }
+.t-close { display: none; }
+
+/* Read more open: text rises, the image shrinks and blurs, other text dims, button becomes "Close" */
+.info:checked ~ .fix .desc { grid-template-rows: 1fr; opacity: 1; }
+.info:checked ~ .fix .desc > p { transform: none; padding: 20px 0 8px; }   /* 20px under the title, as in the Figma */
+.info:checked ~ .fix .track,
+body:has(#bio:checked) .track { filter: blur(14px) brightness(.45); }
+.slide > img, .slide > video { transition: transform .7s var(--slide-ease); }
+.info:checked ~ .fix .slide > :is(img, video),
+body:has(#bio:checked) .slide > :is(img, video) { transform: scale(var(--open-scale)); }
+.info:checked ~ .fix .t-open { display: none; }
+.info:checked ~ .fix .t-close { display: inline; }
+
+/* ---------- Scroll between projects: crossfade + parallax ----------
+   The layers (stage / counter + Read more / caption) move at different speeds. */
+@supports (animation-timeline: view()) {
+  .proj { view-timeline: --p block; }
+  .fix  { position: fixed; inset: 0; animation: active linear both; animation-timeline: --p; animation-range: cover; }
+  .stage   { animation: fx-img  linear both; animation-timeline: --p; animation-range: cover; }
+  .toggle, .counter { animation: fx-nav  linear both; animation-timeline: --p; animation-range: cover; }
+  .caption { animation: fx-text linear both; animation-timeline: --p; animation-range: cover; }
+}
+
+/* only the project in the middle of the screen can be clicked */
+@keyframes active { 0% { visibility: hidden; } 1% { visibility: visible; } 99% { visibility: visible; } 100% { visibility: hidden; }
+                    0%, 40% { pointer-events: none; } 41%, 59% { pointer-events: auto; } 60%, 100% { pointer-events: none; } }
+
+@keyframes fx-img  { 0% { opacity: 0; transform: translateY(14vh); }  50% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-14vh); } }
+@keyframes fx-nav  { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-text { 0% { opacity: 0; transform: translateY(5vh); }    50% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-5vh); } }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 700px) {
+  .clock { display: none; }
+  :root { --img-w: 80vw; }
+  .slide:not(.full) img, .slide:not(.full) video { max-height: 45vh; }
+}
+
+/* ---------- Information (the short bio), top left ----------
+   Same behaviour as the project's Read more: click -> the page blurs, the other type dims, the text opens
+   (growing downwards from the button), click anywhere else or Esc closes. Only one of the two can be open. */
+.bio-state { display: none; }
+.bio {
+  position: fixed; top: var(--pad); left: var(--pad); z-index: 10;
+  width: min(var(--info-w), calc(100% - 2 * var(--pad)));
+  text-align: left;
+  pointer-events: none;                       /* only the button and the open text are clickable */
+}
+.bio-toggle { display: inline-block; pointer-events: auto; cursor: pointer; color: var(--fg-info); font-weight: 600; transition: opacity .6s; }
+.bio-text {
+  display: grid; grid-template-rows: 0fr; opacity: 0;               /* closed */
+  transition: grid-template-rows .7s var(--slide-ease), opacity .7s;
+}
+.bio-text > p {
+  white-space: pre-line; text-align: left; color: var(--fg-info);
+  overflow: hidden; min-height: 0; padding: 0; transform: translateY(-20px);
+  transition: transform .7s var(--slide-ease), padding .7s var(--slide-ease);
+}
+.bio-text a { color: inherit; text-decoration: underline; }
+#bio:checked ~ .bio .bio-text { grid-template-rows: 1fr; opacity: 1; pointer-events: auto; }
+#bio:checked ~ .bio .bio-text > p { transform: none; padding: 12px 0 0; }   /* text starts 12px under the button */
+.bio-backdrop { display: none; position: fixed; inset: 0; z-index: 9; cursor: default; }
+#bio:checked ~ .bio-backdrop { display: block; }
+
+/* ---------- Type: white with the difference filter ----------
+   The blend is set on the elements that own the fade animation / fixed layer, not on the text inside them.
+   While Information or Read more is open the image is dark and blurred, so the type goes back to plain white
+   (a paragraph has to read evenly). Delete this block to go back to plain type. */
+.bio, .clock, .caption, .toggle, .counter { mix-blend-mode: difference; }
+body:has(.info:checked) :is(.bio, .clock, .caption, .toggle, .counter),
+body:has(#bio:checked) :is(.bio, .clock, .caption, .toggle, .counter) { mix-blend-mode: normal; }
+
+/* The page fades to black for a moment when the last project loops back to the first one */
+.loop-fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 30; transition: opacity .35s; }
+.loop-fade.on { opacity: 1; }
+
+@media (max-width: 900px) { :root { --title-w: 100%; } }
