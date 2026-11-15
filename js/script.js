@@ -31,7 +31,15 @@ async function hashOf(pw) {
 }
 
 /* Enter = try the password. Right -> remember it for this tab and open projects.html */
+
+let checking = false;
 async function check() {
+  if (!input.value || checking) return;
+  checking = true;
+  try { await verify(); } finally { checking = false; }
+}
+
+async function verify() {
   if (!input.value) return;
   if (await hashOf(input.value) === HASH) {
     sessionStorage.setItem('portfolio-ok', HASH);
@@ -42,7 +50,8 @@ async function check() {
 }
 
 if (input) {                   // we are on index.html (lock screen)
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+  input.closest('form').addEventListener('submit', e => { e.preventDefault(); check(); });
+  input.addEventListener('change', check);   // iPhone: the check mark that closes the keyboard
 } else if (sessionStorage.getItem('portfolio-ok') !== HASH) {
   location.replace('index.html');   // projects.html opened without the password -> back to the lock
 }
