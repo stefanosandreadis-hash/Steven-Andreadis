@@ -12,12 +12,14 @@
 </head>
 <body>
 
-<!--Design and technical realization by Stefanos Andreadis.-->
+<!--Design and technical realisation by Stefanos Andreadis.-->
 
 <div class="lock">
   <div class="lock-center">
     <p class="lock-title">Stefanos Andreadis, Portfolio.</p>
-    <input id="pw" type="password" placeholder="Enter password" autocomplete="off" spellcheck="false">
+    <form id="gate" autocomplete="off">
+  <input id="pw" type="password" placeholder="Enter password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+</form>
   </div>
   <span class="lock-foot sc" id="year">&copy; 2026</span>   <!-- script.js keeps the year current -->
   <span class="lock-clock sc clock">Ath, 15:00:00 pm</span>
